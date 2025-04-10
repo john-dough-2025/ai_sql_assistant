@@ -32,9 +32,7 @@ with open("data_dictionary.csv") as f:
 # --------------- OPENAI --------------- #
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 # Set a default model
-if "openai_model" not in st.session_state:
-    # st.session_state["openai_model"] = "gpt-4o-mini"
-    st.session_state["openai_model"] = "o3-mini-2025-01-31"
+
 
 system_prompt = f"""You are a SQL expert specialized in Snowflake.
 Your task is to write a SQL query that answers the user's question as clearly and efficiently as possible.
@@ -73,7 +71,21 @@ prompts = [
 
 
 with st.sidebar:
-    with st.expander("**GPT Personaly**", expanded=True):
+
+    with st.expander("**GPT Model**", expanded=True):
+        # model_ids = [model.id for model in client.models.list()]
+        model_ids = []
+        model_ids.insert(0, "gpt-4o-mini")
+        model_ids.insert(1, "o3-mini")
+
+        selected_model = st.selectbox(
+            "Which model do you want to use?",
+            (model_ids),
+            index=0,
+            placeholder="Select OpenAi model...",
+        )
+
+    with st.expander("**GPT Personality**", expanded=True):
         selected_persona = st.selectbox(
             "What personality do you want you GPT to have?",
             list([personas[p].name for p in personas if personas[p].name != "User"]),
@@ -85,7 +97,7 @@ with st.sidebar:
             st.image(personas[selected_persona].avatar)
             st.markdown(personas[selected_persona].character)
         if not selected_persona:
-            selected_persona = "Snowflake"
+            selected_persona = "SnowGPT"
 
     with st.expander("**Prompts ideas**", expanded=False):
         for prompt in prompts:
@@ -128,7 +140,7 @@ if prompt := st.chat_input():
     # Display assistant response in chat message container
     with st.chat_message("assistant",avatar=personas[selected_persona].avatar):
         response = client.responses.create(
-                model=st.session_state["openai_model"],
+                model=selected_model,
                 instructions= system_prompt,
                 input=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
                 stream=False,
