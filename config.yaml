@@ -1,0 +1,8 @@
+personas:
+    User: 
+      avatar: images/julien.png
+    ChatGPT: 
+      avatar: images/chatgpt.png
+      # prompt: You are ChatGPT, an AI assistant
+    Snowflake:
+      avatar: images/snowflake.png
