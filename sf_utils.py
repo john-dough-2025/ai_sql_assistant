@@ -1,6 +1,7 @@
 import streamlit as st
 import snowflake.connector
-import pandas as pd
+from snowflake import connector
+
 
 
 # Establish the Snowflake connection
@@ -19,5 +20,11 @@ def init_snowflake_connection():
 
 def query_sf(connection, query):
     cursor = connection.cursor()
-    cursor.execute("SELECT * FROM TPCH_SF10.CUSTOMER LIMIT 10")
+    try:
+        cursor.execute(query)
+    except Exception as e:
+        st.error(f"❌ Snowflake error:\n{e}")
+        print("❌ Snowflake error:", e)
+        print(query)
+    return cursor.fetch_pandas_all()
 

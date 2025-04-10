@@ -1,14 +1,13 @@
 import streamlit as st
-import random
-import time
 import yaml
 from PIL import Image
 
 CONFIG_PATH = "config.yaml"
 
 class Persona:
-    def __init__(self, name, avatar_path, avatar):
+    def __init__(self, name, character, avatar_path, avatar):
         self.name = name
+        self.character = character
         self.avatar_path = avatar_path
         self.avatar = avatar
 
@@ -22,7 +21,11 @@ def load_config(file_path=CONFIG_PATH):
 def load_personas(config):
     personas = {} 
     for name, data in config["personas"].items(): 
-        personas[name] = Persona(name=name, avatar_path=data["avatar"], avatar=Image.open(data["avatar"]))
+        personas[name] = Persona(
+            name=name, 
+            character=data.get("prompt", ""), 
+            avatar_path=data.get("avatar", ""), 
+            avatar=Image.open(data.get("avatar", "")))
     return personas
 
 def clear_chat_history(key="messages"):
@@ -37,9 +40,5 @@ if __name__ == '__main__':
 
     personas = load_personas(config)
 
-    print(f"""
-----------------------------
-{personas["ChatGPT"].name}
-{personas["ChatGPT"].avatar_path}
-{personas["ChatGPT"].avatar}
-""")
+    personas_list = [personas[p].name for p in personas]
+    st.write(personas_list)

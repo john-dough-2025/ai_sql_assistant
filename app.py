@@ -59,7 +59,6 @@ if "messages" not in st.session_state:
 #################### SIDE BAR  #####################
 ####################################################
 
-selected_persona = "Snowflake"
 
 prompts = [
 "Who is my best customer?",
@@ -72,14 +71,37 @@ prompts = [
 "In which country do I have the most sales?"
 ]
 
+
 with st.sidebar:
+    with st.expander("**GPT Personaly**", expanded=True):
+        selected_persona = st.selectbox(
+            "What personality do you want you GPT to have?",
+            list([personas[p].name for p in personas if personas[p].name != "User"]),
+            index=None,
+            placeholder="Select personality",
+        )
+
+        if selected_persona:
+            st.image(personas[selected_persona].avatar)
+            st.markdown(personas[selected_persona].character)
+        if not selected_persona:
+            selected_persona = "Snowflake"
+
     with st.expander("**Prompts ideas**", expanded=False):
         for prompt in prompts:
             st.markdown(f"- {prompt}")
 
+    with st.expander(":pencil: **Email credentials** 🤫"):
+        email_login = st.text_input("Login:",value="")
+        email_password = st.text_input("Password:",value="", type="password")
+    
+
+
 ####################################################
 #################### MAIN VIEW #####################
 ####################################################
+
+# st.write(st.session_state.messages)
 
 # Display chat message from history on app rerun 
 for message in st.session_state.messages:
@@ -87,7 +109,7 @@ for message in st.session_state.messages:
     if message["persona"] == "User":
         with st.chat_message(message["role"],avatar=personas[message["persona"]].avatar):
             st.markdown(message["content"])
-    if message["persona"] == selected_persona:
+    if message["persona"] != "User":
         with st.chat_message(message["role"],avatar=personas[message["persona"]].avatar):
             st.dataframe(message["df"])
             # with st.expander("Show SQL query", expanded=False):
@@ -105,26 +127,19 @@ if prompt := st.chat_input():
 
     # Display assistant response in chat message container
     with st.chat_message("assistant",avatar=personas[selected_persona].avatar):
-        ai_response = client.responses.create(
+        response = client.responses.create(
                 model=st.session_state["openai_model"],
                 instructions= system_prompt,
                 input=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
                 stream=False,
                 )
-        # response = st.write_stream([words for words in ai_response.output_text])
-        try:
-            cursor.execute(ai_response.output_text)
-        except Exception as e:
-            st.error(f"❌ Snowflake error:\n{e}")
-            print("❌ Snowflake error:", e)
-            print(ai_response.output_text)
-        # Fetch the result as a pandas DataFrame
-        df = cursor.fetch_pandas_all()
+        # response = st.write_stream([words for words in response.output_text])
+        df = query_sf(conn, response.output_text)
         st.dataframe(df)
         # with st.expander("Show SQL query", expanded=False):
         with st.popover("Show SQL query",use_container_width=False):
-            st.code(ai_response.output_text, language="sql")
-    st.session_state.messages.append({"role": "assistant","persona":selected_persona, "content": ai_response.output_text, "df": df})
+            st.code(response.output_text, language="sql")
+    st.session_state.messages.append({"role": "assistant","persona":selected_persona, "content": response.output_text, "df": df})
 
 
 # Clear the chat history
