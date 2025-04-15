@@ -9,7 +9,7 @@ st.title(":snowflake: :blue[SnowGPT:] Your AI-Powered SQL Assistant")
 st.markdown("#### A smart assistant that queries your Snowflake data using natural language")
 
 password = st.text_input("Enter password to use SnowGPT", type="password")
-if password != 'keyrus':
+if password != st.secrets["APP_PW"]:
     st.stop()
 
 ####################################################
