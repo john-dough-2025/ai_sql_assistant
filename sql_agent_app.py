@@ -3,6 +3,7 @@ from openai import OpenAI
 from snowflake import connector
 from sf_utils import *
 from st_utils import *
+from agents_utils import *
 
 st.title(":snowflake: :blue[SnowGPT:] Your AI-Powered SQL Assistant")
 
@@ -104,9 +105,9 @@ with st.sidebar:
         for prompt in prompts:
             st.markdown(f"- {prompt}")
 
-    with st.expander(":pencil: **Email credentials** 🤫"):
-        email_login = st.text_input("Login:",value="")
-        email_password = st.text_input("Password:",value="", type="password")
+    # with st.expander(":pencil: **Email credentials** 🤫"):
+    #     email_login = st.text_input("Login:",value="")
+    #     email_password = st.text_input("Password:",value="", type="password")
     
 
 
@@ -117,19 +118,19 @@ with st.sidebar:
 # st.write(st.session_state.messages)
 
 # Display chat message from history on app rerun 
-for message in st.session_state.messages:
-    # st.write(message)
-    if message["persona"] == "User":
-        with st.chat_message(message["role"],avatar=personas[message["persona"]].avatar):
-            st.markdown(message["content"])
-    if message["persona"] != "User":
-        with st.chat_message(message["role"],avatar=personas[message["persona"]].avatar):
-            st.dataframe(message["df"])
-            # with st.expander("Show SQL query", expanded=False):
-            with st.popover("Show SQL query",use_container_width=False):
-                st.code(message["content"], language="sql")
+# for message in st.session_state.messages:
+#     # st.write(message)
+#     if message["persona"] == "User":
+#         with st.chat_message(message["role"],avatar=personas[message["persona"]].avatar):
+#             st.markdown(message["content"])
+#     if message["persona"] != "User":
+#         with st.chat_message(message["role"],avatar=personas[message["persona"]].avatar):
+#             st.dataframe(message["df"])
+#             # with st.expander("Show SQL query", expanded=False):
+#             with st.popover("Show SQL query",use_container_width=False):
+#                 st.code(message["content"], language="sql")
 
-        
+
 # React to user input
 if prompt := st.chat_input():
     # Display user message in chat container
@@ -140,19 +141,22 @@ if prompt := st.chat_input():
 
     # Display assistant response in chat message container
     with st.chat_message("assistant",avatar=personas[selected_persona].avatar):
-        response = client.responses.create(
-                model=selected_model,
-                instructions= system_prompt,
-                input=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
-                stream=False,
-                )
+       
+        with st.spinner("Running Snowflake query…"):
+            result = asyncio.run(run_query(manager_agent, prompt))
+        # st.subheader("Final output")
+        # st.write(result.final_output)
+        
         # response = st.write_stream([words for words in response.output_text])
-        df = query_sf(conn, response.output_text)
+        df = query_sf(conn, result.final_output.query)
         st.dataframe(df)
+        
         # with st.expander("Show SQL query", expanded=False):
         with st.popover("Show SQL query",use_container_width=False):
-            st.code(response.output_text, language="sql")
-    st.session_state.messages.append({"role": "assistant","persona":selected_persona, "content": response.output_text, "df": df})
+            st.code(result.final_output.query, language="sql")
+        with st.popover("Show chart",use_container_width=False):
+            exec(result.final_output.chart_code)
+    st.session_state.messages.append({"role": "assistant","persona":selected_persona, "content": result.final_output.query, "df": df})
 
 
 # Clear the chat history
