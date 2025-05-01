@@ -328,7 +328,7 @@ if prompt := st.chat_input():
         Dataset description: {sf_datasets[selected_sf_dataset].description}
         The following data dictionary is provided to help you understand the schema:\n{data_dictionary}
 
-        ### Your personality:
+        ### Your personality (only use it for the final manager_msg):
         {personas[selected_persona].character}
         """
 
