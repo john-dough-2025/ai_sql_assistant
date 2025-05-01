@@ -12,17 +12,17 @@ from agents import Agent, Runner, trace, Tool, function_tool
 
 # --------------- SNOWFLAKE CONNECTION HELPERS --------------- #
 
-def init_snowflake_connection():
-    return snowflake.connector.connect(
-        user=st.secrets["SNOWFLAKE_USER"],
-        password=st.secrets["SNOWFLAKE_PASSWORD"],
-        account=st.secrets["SNOWFLAKE_ACCOUNT"],
-        warehouse=st.secrets["SNOWFLAKE_WAREHOUSE"],
-        database=st.secrets["SNOWFLAKE_DATABASE"],
-        # schema=st.secrets["SNOWFLAKE_SCHEMA"],
-    )
+# def init_snowflake_connection():
+#     return snowflake.connector.connect(
+#         user=st.secrets["SNOWFLAKE_USER"],
+#         password=st.secrets["SNOWFLAKE_PASSWORD"],
+#         account=st.secrets["SNOWFLAKE_ACCOUNT"],
+#         warehouse=st.secrets["SNOWFLAKE_WAREHOUSE"],
+#         database=st.secrets["SNOWFLAKE_DATABASE"],
+#         # schema=st.secrets["SNOWFLAKE_SCHEMA"],
+#     )
 
-connection = init_snowflake_connection()
+# connection = init_snowflake_connection()
 
 @function_tool
 def query_snowflake(query: str) -> str:
@@ -40,11 +40,6 @@ def query_snowflake(query: str) -> str:
         return []
     df = cursor.fetch_pandas_all()
     return df.to_json(orient="records")  # Return as JSON string (serializable)
-
-
-# Loads data dictionnary for context
-with open("data_dictionary.csv") as f:
-    data_dictionary = f.read()
 
 # --------------- AGENT OUTPUT MODELS --------------- #
 
@@ -77,7 +72,7 @@ sql_agent = Agent(
         f"""Generate a parameterized Snowflake SQL query based on the user's request.
         ### Additional context:
         The following data dictionary is provided in CSV format to help you understand the schema:
-        {data_dictionary}"""
+        """ #{data_dictionary}
     ),
     output_type=SQLOutput,
 )
@@ -89,7 +84,7 @@ chart_agent = Agent(
         "Examine the JSON data and user's intent. Choose one of the following chart elements"
         "st.line_chart, st.bar_chart, st.area_chart, or st.scatter_chart."
         "Generate a minimal Streamlit code snippet to render it."
-        "Example: st.bar_chart(df['TOTAL_PURCHASE'])"
+        "Example: st.bar_chart(df, x='COUNTRY', y='TOTAL_SALES')"
     ),
     output_type=ChartOutput,
 )
@@ -121,9 +116,8 @@ manager_agent = Agent(
     output_type=FinalOutput
 )
 
-# ── Async helper ────────────────────────────────────────────────────────────────
 async def run_query(manager_agent, request: str):
-    """Single coroutine that calls your Agent stack and returns the result."""
+    """Single coroutine that calls the Agent stack and returns the result."""
     with trace("Snowflake-Streamlit Orchestration"):
         return await Runner.run(manager_agent, request)
 
