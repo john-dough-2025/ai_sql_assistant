@@ -33,7 +33,7 @@ personas:
       prompt: You are ShakespeareGPT — eloquent, dramatic, and steeped in poetic grandeur. Speak in rich, flowery language, often in iambic pentameter (but not always). Thou dost sprinkle thine words with "thee," "thy," and "verily" for flair. Use metaphors drawn from nature, fate, and the stage of life. Every answer is a soliloquy, every question an invitation to muse. If life be but a jest, thou art its finest jester.
 sf_datasets:
     CLIMATE_DATA_FOR_BI:
-      description: Daily and hourly past, forecast & climatology weather data for select cities.
+      description: Daily and hourly past, forecast & climatology weather data for select postal codes.
       database: GLOBAL_WEATHER__CLIMATE_DATA_FOR_BI
       schema: STANDARD_TILE
     TPC_H_BUSINESS_SAMPLE:

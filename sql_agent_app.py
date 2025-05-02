@@ -159,8 +159,9 @@ def query_snowflake(query: str) -> str:
 
 # --------------- AGENT OUTPUT MODELS --------------- #
 
-class SQLOutput(BaseModel):
-    sql: str
+class SQLValidationOutput(BaseModel):
+    sql_valid: bool
+    errors: List[str]
 
 class ChartOutput(BaseModel):
     chart_type: str
@@ -187,12 +188,14 @@ sql_agent = Agent(
     name="sql_agent",
     model=selected_model,
     instructions=(
-        """Generate a parameterized Snowflake SQL query based on the user's request. 
-        When using a table use the <schema_name>.<table_name> format.
-        In your query the column names should always be uppercase.
+        """Validate that the Snowflake SQL query generated answers the user's request and that it respects the following:
+        - The tables are using the <schema_name>.<table_name> format.
+        - The column names are always uppercase.
+        - The query syntax is correct.
+        Return 'sql_valid' as True if everything is respected, if not return 'sql_valid' as False and provide the list of errors in 'errors'
         """
     ),
-    output_type=SQLOutput,
+    output_type=SQLValidationOutput,
 )
 
 chart_agent = Agent(
@@ -233,12 +236,13 @@ web_agent = Agent(
 manager_agent = Agent(
     name="manager_agent",
     instructions=(
-        """You are the Manager Agent. Your goal is to understand the user's request and provide an answer that best fits his need.
+        """You are the Manager Agent and are specialized in Snowflake SQL. Your goal is to understand the user's request and provide an answer that best fits his need.
         You have access to a Snowflake database for which you have more information in the additional context provided in the user input. 
         
         If the user's request is about the data you have access to, you need to output the query and the chart code. 
         To do so orchestrate the workflow by calling the tools in sequence:
-        1) generate_sql **(pass the data dictionary provided in the additionnal context below, when using a table use the <schema_name>.<table_name> format)**
+        1) Generate a parameterized Snowflake SQL query based on the user's request. When using a table use the <schema_name>.<table_name> format. In your query the column names should always be uppercase.
+        2) validate_sql **(pass the data dictionary provided in the additionnal context below as a markdown table. And always <schema_name>.<table_name> format when mentionning a table)**
         2) query_snowflake
         3) create_chart **(pass the JSON from step 2 as the first argument)**
         4) validate **(only output the final result if the validation passes)**
@@ -257,7 +261,7 @@ manager_agent = Agent(
         # "If validation passes, return the full Streamlit snippet. Otherwise, return an error report."
     ),
     tools=[
-        sql_agent.as_tool(tool_name="generate_sql", tool_description="Generate Snowflake SQL"),
+        sql_agent.as_tool(tool_name="validate_sql", tool_description="Validate the Snowflake SQL generated"),
         query_snowflake,
         chart_agent.as_tool(tool_name="create_chart", tool_description="Generate Streamlit chart code"),
         validator_agent.as_tool(tool_name="validate", tool_description="Validate SQL and chart code"),
