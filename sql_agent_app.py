@@ -192,7 +192,9 @@ sql_agent = Agent(
         - The tables are using the <schema_name>.<table_name> format.
         - The column names are always uppercase.
         - The query syntax is correct.
-        Return 'sql_valid' as True if everything is respected, if not return 'sql_valid' as False and provide the list of errors in 'errors'
+        If all criteria are respected return 'sql_valid' as True.
+        If a criterion is not respected then return 'sql_valid' as False and provide the list of errors in 'errors'
+
         """
     ),
     output_type=SQLValidationOutput,
