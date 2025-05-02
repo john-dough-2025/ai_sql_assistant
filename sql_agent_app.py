@@ -160,8 +160,7 @@ def query_snowflake(query: str) -> str:
 # --------------- AGENT OUTPUT MODELS --------------- #
 
 class SQLValidationOutput(BaseModel):
-    sql_valid: bool
-    errors: List[str]
+    comments: List[str]
 
 class ChartOutput(BaseModel):
     chart_type: str
@@ -192,9 +191,6 @@ sql_agent = Agent(
         - The tables are using the <schema_name>.<table_name> format.
         - The column names are always uppercase.
         - The query syntax is correct.
-        If all criteria are respected return 'sql_valid' as True.
-        If a criterion is not respected then return 'sql_valid' as False and provide the list of errors in 'errors'
-
         """
     ),
     output_type=SQLValidationOutput,
@@ -244,10 +240,10 @@ manager_agent = Agent(
         If the user's request is about the data you have access to, you need to output the query and the chart code. 
         To do so orchestrate the workflow by calling the tools in sequence:
         1) Generate a parameterized Snowflake SQL query based on the user's request. When using a table use the <schema_name>.<table_name> format. In your query the column names should always be uppercase.
-        2) validate_sql -> If it returns sql_valid=True then go to step 3, if it returns sql_valid=False regenerate the SQL using the pointers in the errors list
-        3) query_snowflake
+        2) validate_sql
+        3) query_snowflake -> If it doesn't return anything go back to step one and try a different query (only try 3 times maximum)
         4) create_chart **(pass the JSON from step 2 as the first argument)**
-        5) validate **(only output the final result if the validation passes)**
+        5) validate (provide bothe the sql_query and the chart_code for validation) **(only output the final result if the validation passes)**
     
         After you have called 'generate_sql', 'query_snowflake', 'create_chart',
         and 'validate', return the result with:
